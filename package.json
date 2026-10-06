@@ -1,0 +1,13 @@
+{
+  "name": "painel-permissoes",
+  "version": "1.0.0",
+  "description": "Painel somente leitura de permissões, restrições e acessos dos usuários ativos do ERP (HTML, CSS e JS puros).",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "atualizar": "node tools/atualizar-dados.mjs",
+    "servir": "node tools/servir.mjs 8080",
+    "test": "node --test tools/cripto.test.mjs"
+  }
+}

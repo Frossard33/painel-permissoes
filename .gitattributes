@@ -1,0 +1,4 @@
+* text=auto
+*.bat text eol=crlf
+# O arquivo cifrado nunca deve ser reescrito pelo Git (quebra de linha mudaria o conteúdo).
+data/*.json -text

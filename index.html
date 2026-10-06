@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel de Permissões</title>
+  <meta name="description" content="Consulta somente leitura das permissões, restrições e acessos dos usuários ativos do ERP.">
+  <!-- Página interna: não indexar nem vazar a origem em links. -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <!--
+    Política de segurança de conteúdo: só carrega script e estilo deste próprio site e só faz
+    requisições para ele (o arquivo de dados). Sem script inline, sem terceiros.
+  -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <a class="pular-conteudo" href="#conteudo">Ir para o conteúdo</a>
+
+  <header class="topo">
+    <div class="topo-marca">
+      <span class="topo-logo" aria-hidden="true"></span>
+      <div>
+        <h1 class="topo-titulo">Painel de Permissões</h1>
+        <p class="topo-subtitulo">Usuários ativos do ERP e o que cada um pode acessar</p>
+      </div>
+    </div>
+    <div class="topo-acoes" id="topo-acoes" hidden>
+      <span class="topo-info" id="info-atualizacao"></span>
+      <button class="botao botao-secundario" id="btn-bloquear" type="button">Bloquear</button>
+    </div>
+  </header>
+
+  <main id="conteudo" tabindex="-1">
+
+    <!-- Tela 1: senha para decifrar os dados -->
+    <section class="cartao cartao-senha" id="tela-senha" aria-labelledby="titulo-senha" hidden>
+      <h2 id="titulo-senha">Acesso protegido</h2>
+      <p class="texto-apoio">
+        Os dados deste painel ficam criptografados. Digite a senha para visualizá-los.
+        A senha é usada somente neste navegador e nunca é enviada a nenhum servidor.
+      </p>
+      <form id="form-senha" autocomplete="off" novalidate>
+        <label class="rotulo" for="campo-senha">Senha de acesso</label>
+        <div class="campo-senha">
+          <input class="campo" id="campo-senha" type="password" autocomplete="current-password"
+                 spellcheck="false" autocapitalize="off" required aria-describedby="erro-senha">
+          <button class="botao botao-texto" id="btn-mostrar-senha" type="button" aria-pressed="false">Mostrar</button>
+        </div>
+        <p class="mensagem-erro" id="erro-senha" role="alert" hidden></p>
+        <button class="botao botao-primario" id="btn-entrar" type="submit">Desbloquear</button>
+      </form>
+    </section>
+
+    <!-- Tela 2: carregando (download e decifragem) -->
+    <section class="estado" id="tela-carregando" role="status" aria-live="polite" hidden>
+      <span class="spinner" aria-hidden="true"></span>
+      <p id="texto-carregando">Carregando…</p>
+    </section>
+
+    <!-- Tela 3: erro de conexão ou de dados -->
+    <section class="estado estado-erro" id="tela-erro" role="alert" hidden>
+      <h2 id="titulo-erro">Não foi possível carregar</h2>
+      <p id="texto-erro"></p>
+      <button class="botao botao-primario" id="btn-tentar" type="button">Tentar novamente</button>
+    </section>
+
+    <!-- Tela 4: painel (lista de usuários + detalhes) -->
+    <div class="painel" id="tela-painel" hidden>
+      <aside class="lista" aria-label="Usuários ativos">
+        <div class="lista-topo">
+          <label class="so-leitor" for="busca">Buscar usuário por nome</label>
+          <input class="campo" id="busca" type="search" placeholder="Buscar por nome…" autocomplete="off">
+          <p class="lista-contagem" id="contagem" aria-live="polite"></p>
+        </div>
+        <ul class="lista-itens" id="lista-usuarios"></ul>
+      </aside>
+
+      <section class="detalhe" id="detalhe" aria-label="Detalhes do usuário">
+        <div class="estado-vazio" id="detalhe-vazio">
+          <p>Selecione um usuário na lista para ver suas permissões, restrições e acessos.</p>
+        </div>
+
+        <div id="detalhe-conteudo" hidden>
+          <button class="botao botao-texto botao-voltar" id="btn-voltar" type="button">← Voltar à lista</button>
+
+          <header class="detalhe-cabecalho">
+            <span class="avatar" id="det-avatar" aria-hidden="true"></span>
+            <div class="detalhe-titulos">
+              <h2 id="det-nome" tabindex="-1"></h2>
+              <p id="det-sub"></p>
+            </div>
+            <span class="selo selo-ok" id="det-status"></span>
+          </header>
+
+          <div class="abas" role="tablist" aria-label="Seções do usuário">
+            <button class="aba" role="tab" id="aba-gerais" aria-controls="painel-gerais" aria-selected="true" type="button">Dados gerais</button>
+            <button class="aba" role="tab" id="aba-permissoes" aria-controls="painel-permissoes" aria-selected="false" tabindex="-1" type="button">Permissões</button>
+            <button class="aba" role="tab" id="aba-restricoes" aria-controls="painel-restricoes" aria-selected="false" tabindex="-1" type="button">Restrições</button>
+            <button class="aba" role="tab" id="aba-acessos" aria-controls="painel-acessos" aria-selected="false" tabindex="-1" type="button">Acessos</button>
+          </div>
+
+          <div class="aba-painel" role="tabpanel" id="painel-gerais" aria-labelledby="aba-gerais" tabindex="0"></div>
+          <div class="aba-painel" role="tabpanel" id="painel-permissoes" aria-labelledby="aba-permissoes" tabindex="0" hidden></div>
+          <div class="aba-painel" role="tabpanel" id="painel-restricoes" aria-labelledby="aba-restricoes" tabindex="0" hidden></div>
+          <div class="aba-painel" role="tabpanel" id="painel-acessos" aria-labelledby="aba-acessos" tabindex="0" hidden></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="rodape">
+    <p>Consulta somente leitura · Nenhum dado pode ser alterado por este painel · Contém informações internas: não compartilhe a senha.</p>
+  </footer>
+
+  <noscript>
+    <p class="aviso-noscript">Este painel precisa de JavaScript para funcionar.</p>
+  </noscript>
+</body>
+</html>

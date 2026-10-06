@@ -1,0 +1,22 @@
+# Dados de funcionários nunca vão para o Git em claro: só o arquivo CRIPTOGRAFADO.
+data/*
+!data/usuarios.enc.json
+*.tmp
+*-claro.json
+*.plain.json
+
+# Configuração local da ferramenta de pré-visualização / editor
+.claude/
+.vscode/
+.idea/
+
+# Dependências e lixo do sistema
+node_modules/
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Segredos
+.env
+.env.*
+*.secret
