@@ -82,6 +82,9 @@ const estado = {
 };
 
 const ABAS = ['gerais', 'permissoes', 'restricoes', 'acessos'];
+
+/** Layout de celular/tablet em pé (mesmo ponto de corte do style.css). */
+const LAYOUT_CELULAR = window.matchMedia('(max-width: 900px)');
 const renderizadores = {}; // preenchido na seção 8
 const abasRenderizadas = new Set(); // abas já desenhadas para o usuário atual
 
@@ -332,7 +335,8 @@ function mostrarTela(nome, textoCarregando) {
   for (const tela of TELAS) $(`tela-${tela}`).hidden = tela !== nome;
   $('topo-acoes').hidden = nome !== 'painel';
   if (nome === 'carregando') $('texto-carregando').textContent = textoCarregando || 'Carregando…';
-  if (nome === 'senha') $('campo-senha').focus();
+  // No celular, focar sozinho abriria o teclado por cima da tela; o usuário toca no campo.
+  if (nome === 'senha' && !LAYOUT_CELULAR.matches) $('campo-senha').focus();
 }
 
 function mostrarErro(erro, aoTentar) {
@@ -361,7 +365,9 @@ function bloquear(motivo) {
   for (const aba of ABAS) $(`painel-${aba}`).replaceChildren();
   $('detalhe-conteudo').hidden = true;
   $('detalhe-vazio').hidden = false;
+  const estavaNoDetalhe = document.body.classList.contains('mostrando-detalhe');
   document.body.classList.remove('mostrando-detalhe');
+  if (estavaNoDetalhe && history.state?.detalhe) history.back(); // desfaz o passo de histórico do detalhe
   $('busca').value = '';
   mostrarErroSenha(motivo || '');
   mostrarTela('senha');
@@ -436,14 +442,50 @@ function selecionarUsuario(codigo) {
   $('detalhe-conteudo').hidden = false;
 
   ativarAba(estado.aba);
-  document.body.classList.add('mostrando-detalhe'); // no celular, troca a lista pelo detalhe
+  abrirDetalheNoCelular();
+  $('det-nome').focus({ preventScroll: true }); // tira o foco da busca (fecha o teclado do celular)
+}
+
+/*
+ * Celular: lista e detalhe são "telas" separadas. Abrir o detalhe registra um passo no histórico,
+ * então o botão/gesto "voltar" do aparelho volta para a lista (em vez de sair do site), na mesma
+ * posição em que o usuário estava.
+ */
+function abrirDetalheNoCelular() {
+  if (!LAYOUT_CELULAR.matches) return;
+  if (!document.body.classList.contains('mostrando-detalhe')) estado.rolagemLista = window.scrollY;
+  if (!history.state?.detalhe) history.pushState({ detalhe: true }, '');
+  document.body.classList.add('mostrando-detalhe');
   window.scrollTo({ top: 0 });
-  $('det-nome').focus({ preventScroll: true });
+}
+
+function mostrarListaNoCelular() {
+  if (!document.body.classList.contains('mostrando-detalhe')) return;
+  document.body.classList.remove('mostrando-detalhe');
+  window.scrollTo({ top: estado.rolagemLista || 0 });
 }
 
 function voltarParaLista() {
-  document.body.classList.remove('mostrando-detalhe');
-  $('busca').focus({ preventScroll: true });
+  // history.back() dispara "popstate", que chama mostrarListaNoCelular.
+  if (history.state?.detalhe) history.back();
+  else mostrarListaNoCelular();
+}
+
+/** Botão voltar/avançar do navegador. */
+function aoMudarHistorico() {
+  if (history.state?.detalhe && estado.usuario && LAYOUT_CELULAR.matches) {
+    document.body.classList.add('mostrando-detalhe');
+    window.scrollTo({ top: 0 });
+  } else {
+    mostrarListaNoCelular();
+  }
+}
+
+/** Ao trocar de aba num conteúdo longo, volta ao início da aba (as abas ficam fixas no topo no celular). */
+function irParaInicioDasAbas() {
+  const cabecalho = document.querySelector('.detalhe-cabecalho').getBoundingClientRect();
+  const inicio = cabecalho.bottom + window.scrollY;
+  if (window.scrollY > inicio) window.scrollTo({ top: inicio });
 }
 
 
@@ -815,7 +857,8 @@ function abrirPainel() {
   desenharLista();
   mostrarTela('painel');
   vigiarInatividade();
-  $('busca').focus({ preventScroll: true });
+  // Só no computador: no celular o teclado abriria por cima da lista.
+  if (!LAYOUT_CELULAR.matches) $('busca').focus({ preventScroll: true });
 }
 
 function alternarVisibilidadeSenha() {
@@ -835,11 +878,22 @@ function ligarEventos() {
   $('btn-bloquear').addEventListener('click', () => bloquear());
   $('btn-voltar').addEventListener('click', voltarParaLista);
   $('busca').addEventListener('input', atrasar(() => estado.dados && desenharLista()));
+  // Tecla "buscar/ir" do teclado do celular: fecha o teclado para mostrar o resultado.
+  $('busca').addEventListener('keydown', (evento) => evento.key === 'Enter' && evento.target.blur());
   for (const aba of ABAS) {
-    $(`aba-${aba}`).addEventListener('click', () => estado.usuario && ativarAba(aba));
+    $(`aba-${aba}`).addEventListener('click', () => {
+      if (!estado.usuario) return;
+      ativarAba(aba);
+      irParaInicioDasAbas();
+    });
     $(`aba-${aba}`).addEventListener('keydown', aoTeclarNasAbas);
   }
+  window.addEventListener('popstate', aoMudarHistorico);
 }
+
+// Um recarregamento pode manter o estado de "detalhe" no histórico, mas a página volta bloqueada.
+if (history.state?.detalhe) history.replaceState(null, '');
+history.scrollRestoration = 'manual'; // quem restaura a posição da lista é o próprio painel
 
 ligarEventos();
 prepararEnvelope();

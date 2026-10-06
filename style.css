@@ -59,6 +59,7 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh; /* celular: desconta a barra de endereço que aparece e some */
   display: flex;
   flex-direction: column;
   font-family: var(--fonte);
@@ -516,13 +517,24 @@ main { flex: 1; padding: 20px 24px; width: 100%; max-width: 1480px; margin: 0 au
 
 /* Responsivo --------------------------------------------------------------- */
 
+/* Celular e tablet em pé. Também vale para qualquer tela de toque (pointer: coarse). */
 @media (max-width: 900px) {
   main { padding: 14px 12px; }
   .topo { padding: 12px 14px; }
   .topo-info { display: none; }
   .painel { display: block; }
-  .lista { position: static; max-height: none; }
-  .lista-itens { max-height: 60vh; }
+
+  /* A página inteira rola (sem "rolagem dentro da rolagem"); a busca fica fixa no topo da lista. */
+  .lista { position: static; max-height: none; overflow: visible; }
+  .lista-itens { max-height: none; overflow: visible; }
+  .lista-topo {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--superficie);
+    border-radius: 12px 12px 0 0;
+  }
+
   /* No celular: ou a lista, ou o detalhe. */
   body.mostrando-detalhe .lista { display: none; }
   .detalhe { display: none; }
@@ -532,6 +544,39 @@ main { flex: 1; padding: 20px 24px; width: 100%; max-width: 1480px; margin: 0 au
   .definicoes { grid-template-columns: 1fr; }
   .definicoes dt { border-bottom: 0; padding-bottom: 2px; }
   .cartao-senha { margin-top: 3vh; padding: 20px; }
+
+  /* As 4 abas cabem na largura (sem rolagem lateral que esconde "Acessos") e ficam fixas no topo. */
+  .abas {
+    overflow: visible;
+    gap: 0;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--superficie);
+  }
+  .aba {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 48px;
+    padding: 8px 2px;
+    font-size: 0.82rem;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+  }
+  .grade-resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grade-permissoes { grid-template-columns: 1fr; }
+  .barra-filtros .campo { max-width: none; flex-basis: 100%; }
+}
+
+/* Toque: alvos de pelo menos 44 px e campos com 16 px (abaixo disso o iPhone dá zoom ao focar). */
+@media (max-width: 900px), (pointer: coarse) {
+  .campo { font-size: 16px; min-height: 46px; }
+  .botao, .botao-texto { min-height: 44px; }
+  .lista-item { min-height: 56px; }
+  .secao > summary { min-height: 48px; padding-top: 12px; padding-bottom: 12px; }
+  .opcao input { width: 22px; height: 22px; }
+  .botao, .aba, .lista-item, .secao > summary { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 }
 
 @media print {

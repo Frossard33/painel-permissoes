@@ -6,6 +6,10 @@
   <title>Painel de Permissões</title>
   <meta name="description" content="Consulta somente leitura das permissões, restrições e acessos dos usuários ativos do ERP.">
   <!-- Página interna: não indexar nem vazar a origem em links. -->
+  <!-- Celular: controles nativos e barra do navegador acompanham o tema claro/escuro. -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#171e28" media="(prefers-color-scheme: dark)">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
   <!--
@@ -48,7 +52,7 @@
         <label class="rotulo" for="campo-senha">Senha de acesso</label>
         <div class="campo-senha">
           <input class="campo" id="campo-senha" type="password" autocomplete="current-password"
-                 spellcheck="false" autocapitalize="off" required aria-describedby="erro-senha">
+                 spellcheck="false" autocapitalize="off" enterkeyhint="go" required aria-describedby="erro-senha">
           <button class="botao botao-texto" id="btn-mostrar-senha" type="button" aria-pressed="false">Mostrar</button>
         </div>
         <p class="mensagem-erro" id="erro-senha" role="alert" hidden></p>
@@ -74,7 +78,7 @@
       <aside class="lista" aria-label="Usuários ativos">
         <div class="lista-topo">
           <label class="so-leitor" for="busca">Buscar usuário por nome</label>
-          <input class="campo" id="busca" type="search" placeholder="Buscar por nome…" autocomplete="off">
+          <input class="campo" id="busca" type="search" placeholder="Buscar por nome…" autocomplete="off" enterkeyhint="search">
           <p class="lista-contagem" id="contagem" aria-live="polite"></p>
         </div>
         <ul class="lista-itens" id="lista-usuarios"></ul>

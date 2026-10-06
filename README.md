@@ -13,6 +13,11 @@ HTML, CSS e JavaScript puros (sem frameworks), em `index.html`, `style.css` e `s
 Lista com busca por nome, indicador de carregamento, mensagens de erro de conexão e de "sem dados",
 responsivo (computador e celular), tema claro/escuro automático e navegação por teclado.
 
+No celular a lista e o detalhe viram telas separadas: o botão ou gesto de voltar do aparelho retorna
+à lista, na mesma posição; as 4 abas ficam fixas no topo e cabem na largura (até 320 px); os campos
+têm 16 px (o iPhone não dá zoom ao tocar), os alvos de toque têm 44 px ou mais e o teclado não abre sozinho.
+Exige um navegador recente (no iPhone, iOS 16.4 ou mais novo, por causa da descompressão nativa).
+
 ## Como funciona
 
 ```
