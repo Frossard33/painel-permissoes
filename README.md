@@ -41,8 +41,10 @@ Os dados dizem quem pode fazer o quê no ERP; são informação interna.
   tentar adivinhar a senha offline. Use uma frase longa (4 ou mais palavras; a ferramenta exige no
   mínimo 14 caracteres) e não reutilize uma senha de outro lugar.
 - **Trocar a senha não apaga o passado.** Versões antigas do arquivo continuam no histórico do Git.
-  Se a senha vazar, considere os dados daquela época como expostos e torne o repositório privado
-  (Pages em repositório privado exige plano pago do GitHub).
+  Se a senha vazar, considere os dados daquela época como expostos: tire o site do ar
+  (Settings → Pages) e apague o arquivo também do histórico.
+- Tornar o repositório privado **não** protege o site: o site do GitHub Pages continua público,
+  salvo em planos Enterprise com Pages privado. A proteção real é a senha.
 - Ficam visíveis sem a senha apenas: o formato do arquivo, a data de geração e o tamanho.
 - Nunca entram no arquivo: senha do ERP (`USR_SENHA`), CPF, e-mail, data de nascimento, IMEI e login.
   Há testes que quebram se uma consulta passar a ler essas colunas.
