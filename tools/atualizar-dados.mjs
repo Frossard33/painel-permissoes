@@ -20,7 +20,8 @@ import { fileURLToPath } from 'node:url';
 import { cifrar, decifrar, problemaNaSenha, ITERACOES_PADRAO } from './cripto.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const API_PADRAO = 'C:\\Users\\ti\\Desktop\\api-tecinco-bi-evoluido';
+// Por padrão, a API é a pasta "api-tecinco-bi-evoluido" ao lado deste projeto (mesma pasta pai).
+const API_PADRAO = resolve(RAIZ, '..', 'api-tecinco-bi-evoluido');
 
 function lerArgumentos(argv) {
   const opcoes = { apiDir: process.env.API_DIR || API_PADRAO, python: null, saida: join(RAIZ, 'data', 'usuarios.enc.json') };

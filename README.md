@@ -53,8 +53,8 @@ Os dados dizem quem pode fazer o quê no ERP; são informação interna.
 
 ## Atualizar os dados
 
-Pré-requisitos: Node.js 20+ e a API (`C:\Users\ti\Desktop\api-tecinco-bi-evoluido`) com acesso ao
-Firebird configurado no `.env` dela.
+Pré-requisitos: Node.js 20+ e a API (pasta `api-tecinco-bi-evoluido`, ao lado deste projeto; outro
+local via `--api-dir` ou variável `API_DIR`) com acesso ao Firebird configurado no `.env` dela.
 
 ```bash
 ATUALIZAR_DADOS.bat          # ou: npm run atualizar
