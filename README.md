@@ -10,7 +10,8 @@ Painel web **somente leitura** que mostra, para cada usuário **ativo** do ERP T
 4. **Acessos** — telas e relatórios liberados, agrupados por sistema.
 
 HTML, CSS e JavaScript puros (sem frameworks), em `index.html`, `style.css` e `script.js`.
-Lista com busca por nome, indicador de carregamento, mensagens de erro de conexão e de "sem dados",
+Lista com busca por nome e filtro por filial, bloco "Acesso por filial" (vendedores, consultores e
+grupos de restrição ligados a cada filial do usuário), indicador de carregamento, mensagens de erro de conexão e de "sem dados",
 responsivo (computador e celular), tema claro/escuro automático e navegação por teclado.
 
 No celular a lista e o detalhe viram telas separadas: o botão ou gesto de voltar do aparelho retorna
@@ -78,6 +79,24 @@ git commit -m "Atualiza dados dos usuários"
 git push
 ```
 
+### Painéis por filial
+
+Além do painel geral, cada filial pode ter o próprio painel, com arquivo cifrado e senha próprios:
+
+```bash
+node tools/atualizar-dados.mjs --filiais
+```
+
+Gera `data/filial-<código>.enc.json` para cada filial que tem usuários, cada um só com os usuários
+que têm acesso àquela filial. A página da filial abre em `index.html?filial=<código>`; o título mostra
+o nome da filial e o filtro de filial some. A senha de uma filial não abre as outras nem o painel geral.
+
+- A senha dos painéis por filial pode ter **6 caracteres ou mais** (no painel geral continua 14).
+  Os arquivos são públicos no GitHub Pages, então uma senha curta pode ser descoberta por tentativa
+  offline: quem a descobrir vê todos os usuários da filial e o que cada um pode acessar.
+- Um usuário com acesso a várias filiais aparece com todas elas no painel de cada uma.
+- A senha não fica gravada no projeto; é informada só ao gerar os dados (ou por `PAINEL_SENHA`).
+
 ## Publicar no GitHub Pages
 
 1. No repositório: **Settings → Pages → Build and deployment → Deploy from a branch**.
@@ -143,6 +162,7 @@ Na API: `venv\Scripts\python.exe -m pytest tests\test_usuarios_erp_service.py te
 ```
 index.html  style.css  script.js     painel (3 arquivos)
 data/usuarios.enc.json               dados criptografados (gerado)
+data/filial-<código>.enc.json        dados criptografados de cada filial (gerado com --filiais)
 tools/atualizar-dados.mjs            lê a API, criptografa e grava
 tools/cripto.mjs                     AES-GCM + PBKDF2 (mesmo formato que o navegador decifra)
 tools/servir.mjs                     servidor local para testes

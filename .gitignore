@@ -1,6 +1,7 @@
 # Dados de funcionários nunca vão para o Git em claro: só o arquivo CRIPTOGRAFADO.
 data/*
 !data/usuarios.enc.json
+!data/filial-*.enc.json
 *.tmp
 *-claro.json
 *.plain.json

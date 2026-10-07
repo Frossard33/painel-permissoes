@@ -22,9 +22,13 @@
 /* ============================================================================
  * 1. CONFIGURAÇÃO — único lugar para URL do arquivo, cabeçalhos e limites
  * ========================================================================== */
+/** Painel de uma filial: página aberta com ?filial=<código> (só dígitos) usa o arquivo daquela filial. */
+const FILIAL_DA_URL = /^\d{1,6}$/.test(new URLSearchParams(location.search).get('filial') ?? '')
+  ? new URLSearchParams(location.search).get('filial') : null;
+
 const CONFIG = Object.freeze({
   /** Arquivo de dados criptografado (relativo a esta página). */
-  URL_DADOS: 'data/usuarios.enc.json',
+  URL_DADOS: FILIAL_DA_URL ? `data/filial-${FILIAL_DA_URL}.enc.json` : 'data/usuarios.enc.json',
   /** Opções do fetch (cabeçalhos incluídos). Sem cookies/credenciais. */
   OPCOES_FETCH: Object.freeze({
     method: 'GET',
@@ -392,9 +396,11 @@ function vigiarInatividade() {
 function desenharLista() {
   const termo = semAcento($('busca').value.trim());
   const todos = estado.dados.usuarios;
-  const visiveis = todos.filter((u) => !termo || semAcento(`${u.nome} ${u.apelido}`).includes(termo));
+  const filial = $('filtro-filial').value;
+  const visiveis = todos.filter((u) => (!filial || u.filiais.includes(Number(filial)))
+    && (!termo || semAcento(`${u.nome} ${u.apelido}`).includes(termo)));
 
-  $('contagem').textContent = termo
+  $('contagem').textContent = termo || filial
     ? `${fmtNumero(visiveis.length)} de ${fmtNumero(todos.length)} usuários`
     : `${fmtNumero(todos.length)} usuários ativos`;
 
@@ -543,6 +549,22 @@ function itensDeObjetos(pares) {
   });
 }
 
+/** Acesso do usuário em cada filial: o que o cadastro vincula a ela (vendedores, consultores, grupos de restrição). */
+function tabelaPorFilial(u) {
+  const daFilial = (itens, codigo) => itens.filter((i) => i.filial === codigo);
+  const nomes = (itens) => (itens.length ? itens.map((i) => i.nome).join(', ') : '—');
+  const linhas = u.filiais
+    .slice()
+    .sort((a, b) => comparar(nomeFilial(a), nomeFilial(b)))
+    .map((c) => [
+      c === u.filial_padrao ? `${nomeFilial(c)} (padrão)` : nomeFilial(c),
+      nomes(daFilial(u.vendedores, c)),
+      nomes(daFilial(u.consultores, c)),
+      nomes(daFilial(u.restricoes_negocio.grupos, c)),
+    ]);
+  return tabela([{ titulo: 'Filial' }, { titulo: 'Vendedores' }, { titulo: 'Consultores' }, { titulo: 'Grupos de restrição' }], linhas);
+}
+
 /* ---- Aba 1: Dados gerais ---- */
 renderizadores.gerais = (u) => {
   const restricoesDeTela = u.campos_restritos.filter(([, nivel]) => NIVEIS_RESTRICAO.has(nivel)).length;
@@ -569,6 +591,8 @@ renderizadores.gerais = (u) => {
       linha('Filial padrão', u.filial_padrao == null ? '—' : nomeFilial(u.filial_padrao)),
       linha('Cargo', u.cargos.length ? u.cargos.map((c) => c.nome).join(', ') : '—'),
     ),
+    bloco('Acesso por filial', u.filiais.length ? tabelaPorFilial(u) : vazio('Este usuário não tem filiais vinculadas.'),
+      'Para cada filial liberada, o que o cadastro do usuário vincula a ela.'),
   );
 };
 
@@ -851,7 +875,17 @@ function abrirPainel() {
   estado.indices = montarIndices(estado.dados);
   estado.usuario = null;
   $('info-atualizacao').textContent = `Dados de ${fmtDataHora(estado.dados.gerado_em)}`;
+  const daFilial = estado.dados.filial_painel;
+  document.title = daFilial == null ? 'Painel de Permissões' : `Painel de Permissões — ${nomeFilial(daFilial)}`;
+  document.querySelector('.topo-subtitulo').textContent = daFilial == null
+    ? 'Usuários ativos do ERP e o que cada um pode acessar'
+    : `Filial ${nomeFilial(daFilial)}: usuários com acesso e o que cada um pode acessar`;
+  $('filtro-filial').hidden = daFilial != null;
   $('busca').value = '';
+  const filtro = $('filtro-filial');
+  filtro.replaceChildren(criar('option', { texto: 'Todas as filiais', attrs: { value: '' } }),
+    ...[...estado.dados.filiais].sort((a, b) => comparar(a.nome, b.nome))
+      .map((f) => criar('option', { texto: f.nome, attrs: { value: String(f.codigo) } })));
   $('detalhe-conteudo').hidden = true;
   $('detalhe-vazio').hidden = false;
   desenharLista();
@@ -878,6 +912,7 @@ function ligarEventos() {
   $('btn-bloquear').addEventListener('click', () => bloquear());
   $('btn-voltar').addEventListener('click', voltarParaLista);
   $('busca').addEventListener('input', atrasar(() => estado.dados && desenharLista()));
+  $('filtro-filial').addEventListener('change', () => estado.dados && desenharLista());
   // Tecla "buscar/ir" do teclado do celular: fecha o teclado para mostrar o resultado.
   $('busca').addEventListener('keydown', (evento) => evento.key === 'Enter' && evento.target.blur());
   for (const aba of ABAS) {

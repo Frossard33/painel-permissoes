@@ -17,21 +17,22 @@ import { existsSync, mkdirSync, renameSync, writeFileSync, statSync } from 'node
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { cifrar, decifrar, problemaNaSenha, ITERACOES_PADRAO } from './cripto.mjs';
+import { cifrar, decifrar, problemaNaSenha, ITERACOES_PADRAO, TAMANHO_MINIMO_SENHA_FILIAL } from './cripto.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Por padrão, a API é a pasta "api-tecinco-bi-evoluido" ao lado deste projeto (mesma pasta pai).
 const API_PADRAO = resolve(RAIZ, '..', 'api-tecinco-bi-evoluido');
 
 function lerArgumentos(argv) {
-  const opcoes = { apiDir: process.env.API_DIR || API_PADRAO, python: null, saida: join(RAIZ, 'data', 'usuarios.enc.json') };
+  const opcoes = { apiDir: process.env.API_DIR || API_PADRAO, python: null, saida: join(RAIZ, 'data', 'usuarios.enc.json'), filiais: false };
   for (let i = 0; i < argv.length; i += 1) {
     const [chave, valor] = [argv[i], argv[i + 1]];
     if (chave === '--api-dir') { opcoes.apiDir = resolve(valor); i += 1; }
     else if (chave === '--python') { opcoes.python = resolve(valor); i += 1; }
     else if (chave === '--saida') { opcoes.saida = resolve(valor); i += 1; }
+    else if (chave === '--filiais') opcoes.filiais = true;
     else if (chave === '--ajuda' || chave === '-h') {
-      console.log('Uso: node tools/atualizar-dados.mjs [--api-dir <pasta>] [--python <python.exe>] [--saida <arquivo>]');
+      console.log('Uso: node tools/atualizar-dados.mjs [--api-dir <pasta>] [--python <python.exe>] [--saida <arquivo>] [--filiais]');
       process.exit(0);
     } else throw new Error(`Argumento desconhecido: ${chave}`);
   }
@@ -86,18 +87,44 @@ function perguntarSenha(pergunta) {
   });
 }
 
-async function obterSenha() {
+async function obterSenha(minimo) {
   if (process.env.PAINEL_SENHA) {
-    const problema = problemaNaSenha(process.env.PAINEL_SENHA);
+    const problema = problemaNaSenha(process.env.PAINEL_SENHA, minimo);
     if (problema) throw new Error(`PAINEL_SENHA inválida. ${problema}`);
     return process.env.PAINEL_SENHA;
   }
   console.log('\nEscolha a senha que será pedida para abrir o painel (guarde-a em local seguro).');
   const senha = await perguntarSenha('Senha: ');
-  const problema = problemaNaSenha(senha);
+  const problema = problemaNaSenha(senha, minimo);
   if (problema) throw new Error(problema);
   if (senha !== (await perguntarSenha('Repita a senha: '))) throw new Error('As senhas não conferem.');
   return senha;
+}
+
+/** Grava o envelope de forma atômica (nunca fica um arquivo pela metade). */
+function gravar(arquivo, envelope) {
+  mkdirSync(dirname(arquivo), { recursive: true });
+  const temporario = `${arquivo}.tmp`;
+  writeFileSync(temporario, JSON.stringify(envelope), 'utf8');
+  renameSync(temporario, arquivo);
+}
+
+/** Um arquivo cifrado por filial, só com os usuários que têm acesso a ela (painel: ?filial=<código>). */
+async function gerarPorFilial(dados, senha, pasta) {
+  let total = 0;
+  for (const filial of dados.filiais) {
+    const usuarios = dados.usuarios.filter((u) => u.filiais.includes(filial.codigo));
+    if (!usuarios.length) continue;
+    const texto = JSON.stringify({ ...dados, usuarios, filial_painel: filial.codigo });
+    const envelope = await cifrar(texto, senha, { iteracoes: ITERACOES_PADRAO, geradoEm: dados.gerado_em });
+    const conferido = JSON.parse(await decifrar(envelope, senha));
+    if (conferido.usuarios.length !== usuarios.length) throw new Error(`Falha na conferência da filial ${filial.codigo}; nada foi gravado.`);
+    const arquivo = join(pasta, `filial-${filial.codigo}.enc.json`);
+    gravar(arquivo, envelope);
+    console.log(`  ${arquivo} · ${filial.nome} · ${usuarios.length} usuários · ${Math.round(statSync(arquivo).size / 1024)} KB`);
+    total += 1;
+  }
+  return total;
 }
 
 async function principal() {
@@ -108,6 +135,16 @@ async function principal() {
   const dados = JSON.parse(textoJson);
   if (!Array.isArray(dados.usuarios) || dados.usuarios.length === 0) throw new Error('A API não devolveu nenhum usuário ativo; nada foi gravado.');
 
+  if (opcoes.filiais) {
+    const senha = await obterSenha(TAMANHO_MINIMO_SENHA_FILIAL);
+    console.log('Criptografando um arquivo por filial…');
+    const total = await gerarPorFilial(dados, senha, dirname(opcoes.saida));
+    console.log(`
+Pronto: ${total} painéis de filial. Acesso pela página com ?filial=<código>.`);
+    console.log('Próximo passo: publicar a alteração (git add data && git commit && git push).');
+    return;
+  }
+
   const senha = await obterSenha();
   console.log('Criptografando…');
   const envelope = await cifrar(textoJson, senha, { iteracoes: ITERACOES_PADRAO, geradoEm: dados.gerado_em });
@@ -116,10 +153,7 @@ async function principal() {
   const conferido = JSON.parse(await decifrar(envelope, senha));
   if (conferido.usuarios.length !== dados.usuarios.length) throw new Error('Falha na conferência da criptografia; nada foi gravado.');
 
-  mkdirSync(dirname(opcoes.saida), { recursive: true });
-  const temporario = `${opcoes.saida}.tmp`;
-  writeFileSync(temporario, JSON.stringify(envelope), 'utf8');
-  renameSync(temporario, opcoes.saida); // troca atômica: nunca fica um arquivo pela metade
+  gravar(opcoes.saida, envelope);
 
   const kb = Math.round(statSync(opcoes.saida).size / 1024);
   console.log(`\nPronto: ${opcoes.saida}`);

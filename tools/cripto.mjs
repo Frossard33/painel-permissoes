@@ -14,6 +14,7 @@ import { randomBytes, webcrypto } from 'node:crypto';
 export const FORMATO = 'painel-permissoes/1';
 export const ITERACOES_PADRAO = 600000; // recomendação atual da OWASP para PBKDF2-SHA256
 export const TAMANHO_MINIMO_SENHA = 14;
+export const TAMANHO_MINIMO_SENHA_FILIAL = 6; // painéis por filial: mínimo reduzido, escolha consciente do responsável
 
 const { subtle } = webcrypto;
 const codificador = new TextEncoder();
@@ -35,9 +36,9 @@ async function derivarChave(senha, salt, iteracoes, usos) {
 }
 
 /** Devolve o problema da senha (texto) ou null se ela for aceitável. */
-export function problemaNaSenha(senha) {
-  if (senha.length < TAMANHO_MINIMO_SENHA) {
-    return `A senha precisa ter pelo menos ${TAMANHO_MINIMO_SENHA} caracteres. Dica: use uma frase com 4 ou mais palavras.`;
+export function problemaNaSenha(senha, minimo = TAMANHO_MINIMO_SENHA) {
+  if (senha.length < minimo) {
+    return `A senha precisa ter pelo menos ${minimo} caracteres. Dica: use uma frase com 4 ou mais palavras.`;
   }
   if (new Set(senha).size < 6) return 'A senha tem caracteres repetidos demais.';
   if (/^\d+$/.test(senha)) return 'A senha não pode ser só números.';
